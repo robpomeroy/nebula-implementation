@@ -1,0 +1,169 @@
+pki:
+  ca: /etc/nebula/{{ nebula_ca_crt_name }}
+  cert: /etc/nebula/node.crt
+  key: /etc/nebula/node.key
+  #blocklist is a list of certificate fingerprints that we will refuse to talk to
+  #blocklist:
+  #  - c99d4e650533b92061b09918e838a5a0a6aaee21eed1d12fd937682865936c72
+
+static_host_map:
+
+lighthouse:
+  am_lighthouse: true
+  # serve_dns optionally starts a dns listener that responds to various queries and can even be
+  # delegated to for resolution
+  serve_dns: true
+  dns:
+    # The DNS host defines the IP to bind the dns listener to. This also allows binding to the nebula node IP.
+    host: {{ lighthouse_ip }}
+    port: {{ nebula_dns_port }}
+  # interval is the number of seconds between updates from this node to a lighthouse.
+  # during updates, a node sends information about its current IP addresses to each node.
+  interval: 60
+  hosts:
+
+  #remote_allow_list:
+    # Example to block IPs from this subnet from being used for remote IPs.
+    #"172.16.0.0/12": false
+
+  #local_allow_list:
+    # Example to block tun0 and all docker interfaces.
+    #interfaces:
+      #tun0: false
+      #'docker.*': false
+    # Example to only advertise this subnet to the lighthouse.
+    #"10.0.0.0/8": true
+
+listen:
+  # To listen on both any ipv4 and ipv6 use "[::]"
+  host: 0.0.0.0
+  port: {{ nebula_port }}
+  #batch: 64
+  #read_buffer: 10485760
+  #write_buffer: 10485760
+
+# EXPERIMENTAL: This option is currently only supported on linux and may
+# change in future minor releases.
+#
+# Routines is the number of thread pairs to run that consume from the tun and UDP queues.
+# Currently, this defaults to 1 which means we have 1 tun queue reader and 1
+# UDP queue reader. Setting this above one will set IFF_MULTI_QUEUE on the tun
+# device and SO_REUSEPORT on the UDP socket to allow multiple queues.
+#routines: 1
+
+punchy:
+  punch: true
+  respond: true
+
+  # delays a punch response for misbehaving NATs, default is 1 second, respond must be true to take effect
+  #delay: 1s
+
+#cipher: chachapoly
+
+#local_range: "172.16.0.0/24"
+
+# sshd can expose informational and administrative functions via ssh this is a
+#sshd:
+  # Toggles the feature
+  #enabled: true
+  # Host and port to listen on, port 22 is not allowed for your safety
+  #listen: 127.0.0.1:2222
+  # A file containing the ssh host private key to use
+  # A decent way to generate one: ssh-keygen -t ed25519 -f ssh_host_ed25519_key -N "" < /dev/null
+  #host_key: ./ssh_host_ed25519_key
+  # A file containing a list of authorized public keys
+  #authorized_users:
+    #- user: steeeeve
+      # keys can be an array of strings or single string
+      #keys:
+        #- "ssh public key string"
+
+# Configure the private interface. Note: addr is baked into the nebula certificate
+tun:
+  disabled: false
+  dev: nebula1
+  drop_local_broadcast: false
+  drop_multicast: false
+  tx_queue: 500
+  mtu: 1300
+  routes:
+    #- mtu: 8800
+    #  route: 10.0.0.0/16
+  unsafe_routes:
+    #- route: 172.16.1.0/24
+    #  via: 192.168.100.99
+    #  mtu: 1300 #mtu will default to tun mtu if this option is not sepcified
+
+
+# TODO
+# Configure logging level
+logging:
+  # panic, fatal, error, warning, info, or debug. Default is info
+  level: info
+  # json or text formats currently available. Default is text
+  format: text
+  #disable_timestamp: true
+  #timestamp_format: "2006-01-02T15:04:05.000Z07:00"
+
+#stats:
+  #type: graphite
+  #prefix: nebula
+  #protocol: tcp
+  #host: 127.0.0.1:9999
+  #interval: 10s
+
+  #type: prometheus
+  #listen: 127.0.0.1:8080
+  #path: /metrics
+  #namespace: prometheusns
+  #subsystem: nebula
+  #interval: 10s
+
+  # enables counter metrics for meta packets
+  #   e.g.: `messages.tx.handshake`
+  # NOTE: `message.{tx,rx}.recv_error` is always emitted
+  #message_metrics: false
+
+  # enables detailed counter metrics for lighthouse packets
+  #   e.g.: `lighthouse.rx.HostQuery`
+  #lighthouse_metrics: false
+
+# Handshake Manger Settings
+#handshakes:
+  #try_interval: 100ms
+  #retries: 20
+  #trigger_buffer: 64
+
+# Nebula security group configuration
+firewall:
+  conntrack:
+    tcp_timeout: 12m
+    udp_timeout: 3m
+    default_timeout: 10m
+    max_connections: 100000
+
+  outbound:
+    # Allow all outbound traffic from this node
+    - port: any
+      proto: any
+      host: any
+
+  inbound:
+    # Allow ping
+    - port: any
+      proto: icmp
+      host: any
+
+    # Allow DNS
+    - port: {{ nebula_dns_port }}
+      proto: any
+      host: any
+
+    # Allow SSH
+{% for ssh_group in ssh_groups %}
+    - port: 22
+      proto: tcp
+      group: {{ ssh_group }}
+
+{% endfor %}
+

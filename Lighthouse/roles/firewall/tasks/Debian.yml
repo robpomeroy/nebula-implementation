@@ -1,0 +1,14 @@
+---
+- name: Allow Nebula access from anywhere
+  ufw:
+    rule: allow
+    to_port: "{{ nebula_port }}"
+    proto: udp
+  notify: Reload ufw
+
+- name: Allow DNS access
+  ufw:
+    rule: allow
+    to_port: "{{ nebula_dns_port }}"
+    proto: any
+  notify: Reload ufw

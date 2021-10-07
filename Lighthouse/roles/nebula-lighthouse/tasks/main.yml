@@ -1,0 +1,58 @@
+---
+# version 1.4 released 11 May 2021
+- name: Copy Nebula binary into place
+  copy:
+    src: nebula_1.4
+    dest: /usr/local/bin/nebula
+    mode: 0755
+
+# Would always report "changed"; a known issue with this module
+- name: Add manage network capability to Nebula binary
+  community.general.capabilities:
+    path: /usr/local/bin/nebula
+    capability: cap_net_admin+pe
+  changed_when: false
+
+- name: Ensure config directory exists
+  file:
+    path: /etc/nebula
+    state: directory
+    owner: nebula
+    group: root
+    mode: 0770
+
+- name: Copy Nebula crypto matter into place
+  copy:
+    src: "{{ item }}"
+    dest: "/etc/nebula/{{ item }}"
+    owner: nebula
+    group: root
+    mode: 0660
+  loop:
+    - {{ nebula_ca_cert_name }}
+    - node.crt
+    - node.key
+  notify: Restart Nebula
+
+- name: Copy Nebula configuration into place
+  template:
+    src: lighthouse.yaml.j2
+    dest: /etc/nebula/lighthouse.yaml
+    owner: nebula
+    group: root
+    mode: 0660
+  notify: Restart Nebula
+
+- name: Create Nebula service unit file
+  copy:
+    src: nebula.service
+    dest: /etc/systemd/system/nebula.service
+    owner: root
+    mode: 0644
+
+- name: Enable Nebula service
+  systemd:
+    name: nebula.service
+    daemon_reload: yes
+    enabled: yes
+    state: started

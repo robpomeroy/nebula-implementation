@@ -1,0 +1,14 @@
+---
+# OS-independent variables
+server_timezone: Europe/London # For acceptable entries here, see https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
+
+## NEBULA SETTINGS
+
+nebula_port: "4242"
+nebula_dns_port: "4253"
+lighthouse_ip: "192.168.92.1"
+nebula_ca_cert_name: 2021_office_ca.crt
+
+# The following groups are permitted to connect to the lighthouse via SSH
+ssh_groups:
+  - fred

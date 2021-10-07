@@ -1,0 +1,8 @@
+---
+- name: Create the Nebula user
+  user:
+    name: nebula
+    state: present
+    password: ""
+    shell: /sbin/nologin
+

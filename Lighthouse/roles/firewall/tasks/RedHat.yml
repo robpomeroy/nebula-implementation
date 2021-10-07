@@ -1,0 +1,14 @@
+---
+- name: Allow Nebula access from anywhere
+  firewalld:
+    port: "{{ nebula_port }}/udp"
+    state: enabled
+    permanent: yes
+    immediate: yes
+
+- name: Allow DNS access
+  firewalld:
+    port: "{{ nebula_dns_port }}"
+    state: enabled
+    permanent: yes
+    immediate: yes
