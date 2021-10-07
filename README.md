@@ -54,7 +54,7 @@ a maximum of 1022 nodes.
 ## Lighthouse playbook
 
 The Ansible playbook can run against most Debian- or Red Hat-derived instances.
-the lighthouse requires very few resources, so you can use a tiny cloud instance
+The lighthouse requires very few resources, so you can use a tiny cloud instance
 or potentially add as an additional capability of some other server, with
 minimal impact. The lighthouse simply requires a public IP, with a reachable
 UDP port.
