@@ -16,12 +16,13 @@
 .NOTES
     This release:
 
-        Version: 1.0
-        Date:    29 September 2021
+        Version: 1.1
+        Date:    11 October 2021
         Author:  Rob Pomeroy
 
     Version history:
 
+        1.1 - 11 October 2021 - add service recovery options
         1.0 - 29 September 2021 - first release
 
 #>
@@ -232,6 +233,9 @@ Set-Content -Path ($NebulaFolder + "\node.yaml")  -Value $ConfigFile | Out-Null
 Write-Host "Intalling the Nebula service"
 & ($NebulaFolder + "\nebula") -service uninstall | Out-Null
 & ($NebulaFolder + "\nebula") -config ($NebulaFolder + "\node.yaml") -service install
+
+# Set service recovery options (restart after 1 minute)
+& C:\Windows\System32\sc.exe failure Nebula reset= 86400 actions= restart/60000/restart/60000/restart/60000 | Out-Null
 
 
 #########
