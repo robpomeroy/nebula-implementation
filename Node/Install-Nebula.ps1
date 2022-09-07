@@ -16,13 +16,14 @@
 .NOTES
     This release:
 
-        Version: 1.1
-        Date:    11 October 2021
+        Version: 1.2
+        Date:    7 September 2022
         Author:  Rob Pomeroy
 
     Version history:
 
-        1.1 - 11 October 2021 - add service recovery options
+        1.2 -  7 September 2022 - upgrade Nebula from 1.4 to 1.6
+		1.1 - 11 October   2021 - add service recovery options
         1.0 - 29 September 2021 - first release
 
 #>
@@ -32,9 +33,9 @@
 ##############
 
 $NebulaFolder = ($Env:APPDATA + "\Nebula") 
-$NebulaZipHash = "80b6b6cbe258276f35e299f122c7609afc25a14e8a93e03dd2e09fdd11b7a33b" # SHA256 hash for v1.4 Nebula zip file
-$NebulaBinHash = "debdf6be27bd8987cf0794efee3ffc8ce7e18824af5aaa617063cdc3847c2598" # SHA256 hash for v1.4 Nebula binary
-$TAPZipHash = "4d570348205c36e55528da2ca8dfc754c1762716f9c2428532a98f47455f0378" # SHA256 hash for 9.24.6 TAP adapter zip file
+$NebulaZipUrl = "https://github.com/slackhq/nebula/releases/download/v1.6.0/nebula-windows-amd64.zip"
+$NebulaZipHash = "c700b658f600ee3cffdccb28223e60417969ded5f6804df643f0b0d1b173af78" # SHA256 hash for v1.6 Nebula zip file
+$NebulaBinHash = "c700b658f600ee3cffdccb28223e60417969ded5f6804df643f0b0d1b173af78" # SHA256 hash for v1.6 Nebula binary
 $CACertName = "2021_office_ca" # the public cert's file name, minus ".crt"
 $LighthouseDNS = "enter.external.DNS" # you can alternatively use a public IP
 $LighthouseInternalIP = "192.168.92.1" # amend as required; this is the IP on the Nebula network
@@ -72,7 +73,7 @@ if (
         Write-Host "Downloading Nebula..."
 
         # Download the Nebula zip file
-        Invoke-WebRequest -Uri "https://github.com/slackhq/nebula/releases/download/v1.4.0/nebula-windows-amd64.zip" -OutFile "nebula.zip" | Unblock-File
+        Invoke-WebRequest -Uri $NebulaZipUrl -OutFile "nebula.zip" | Unblock-File
         If ((Get-FileHash -Path ($NebulaFolder + "\nebula.zip") -Algorithm SHA256).Hash.ToLower() -ne $NebulaZipHash) {
             Throw "Error: Downloaded Nebula zip file hash was incorrect. Try again?"
         }
@@ -80,46 +81,6 @@ if (
     # Unpack the zip file
     Expand-Archive -Path "nebula.zip" -DestinationPath $NebulaFolder -Force
     Remove-Item -Path ($NebulaFolder + "\nebula.zip")
-}
-
-
-#################
-## TAP ADAPTER ##
-#################
-
-# We need the OpenVPN TAP adapter for Nebula
-if ((Get-NetAdapter -InterfaceDescription "TAP-Windows Adapter V9" | Measure-Object).Count -eq 0) {
-    Write-Host "Installing TAP adapter..."
-
-    # Download the TAP adapter zip file
-    Invoke-WebRequest -Uri "https://build.openvpn.net/downloads/releases/tap-windows-9.24.6.zip" -OutFile "tap-windows-9.24.6.zip" | Unblock-File
-    If ((Get-FileHash -Path ($NebulaFolder + "\tap-windows-9.24.6.zip") -Algorithm SHA256).Hash.ToLower() -ne $TAPZipHash) {
-        Throw "Error: Downloaded TAP adapter zip file hash was incorrect. Try again?"
-    }
-
-    # Unpack the zip file
-    Expand-Archive -Path "tap-windows-9.24.6.zip" -DestinationPath $NebulaFolder -Force
-    Remove-Item -Path ($NebulaFolder + "\tap-windows-9.24.6.zip")
-    
-    # Install the driver
-    Push-Location -Path .\tap-windows-9.24.6\amd64
-    & .\tapinstall install OemVista.inf tap0901 | Out-Null
-
-    Pop-Location
-}
-
-Write-Host "Setting network profile to Private"
-$TAPAdapters = Get-NetAdapter -InterfaceDescription "TAP-Windows Adapter V9"
-foreach ($TAPAdapter in $TAPAdapters) {
-    # Go to the network profles location in the Registry
-    Push-Location -Path "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\NetworkList\Profiles"
-    
-    # $TAPAdapter.Name is the same as the Descriptions that appear in network profiles in the Registry
-    # We set the matching profile to category 1 - which corresponds to the "Private" profile
-    Get-ChildItem | Get-ItemProperty | Where-Object -Property Description -eq $TAPAdapter.Name  | Set-ItemProperty -Name Category -Value 1
-
-    # Go back to the file system
-    Pop-Location
 }
 
 
